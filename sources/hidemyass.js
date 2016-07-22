@@ -118,11 +118,14 @@ var hidemyass = module.exports = {
 
 	parseResponseData: function(data, cb) {
 
+		var proxies = [];
+
+		if (~data.indexOf("noresult")) return cb(null, proxies);
+
 		try {
 
 			data = JSON.parse(data);
 
-			var proxies = [];
 			var $ = cheerio.load('<table>' + data.table + '</table>');
 
 			$('tr').each(function(index, tr) {
