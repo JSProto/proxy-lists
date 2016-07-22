@@ -108,7 +108,8 @@ var proxies24 = module.exports = {
 
 		request({
 			method: 'GET',
-			url: startingPage.url
+			url: startingPage.url,
+			timeout: 3000
 		}, function(error, response, data) {
 
 			if (error) {

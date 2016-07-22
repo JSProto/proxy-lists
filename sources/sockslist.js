@@ -83,7 +83,8 @@ module.exports = {
 
 		request({
 			method: 'GET',
-			url: listUrl
+			url: listUrl,
+			timeout: 3000
 		}, function(error, response, data) {
 
 			if (error) {

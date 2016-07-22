@@ -75,7 +75,8 @@ var hidemyass = module.exports = {
 				o: 0,// Desc (sort direction)
 				pp: 3,// 100 per page
 				sortBy: 'date',
-			}
+			},
+			timeout: 3000
 		};
 
 		if (options.sample) {

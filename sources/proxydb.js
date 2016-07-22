@@ -92,7 +92,8 @@ var Source = module.exports = {
 				minavail: 50,
 				protocol: protocol,
 				anonlvl: []
-			}
+			},
+			timeout: 3000
 		};
 
 		if (options.sample) {

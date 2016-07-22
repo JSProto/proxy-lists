@@ -48,7 +48,8 @@ module.exports = {
 				anonymityLevels: options.anonymityLevels.join(','),
 				protocols: options.protocols.join(','),
 				countries: _.keys(options.countries).join(','),
-			}
+			},
+			timeout: 3000
 		};
 
 		request(requestOptions, function(error, response, data) {

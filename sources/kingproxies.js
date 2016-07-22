@@ -49,7 +49,8 @@ module.exports = {
 				protocols: options.protocols.join(','),
 				alive: 'true',
 				country_code: _.keys(options.countries).join(',').toUpperCase(),
-			}
+			},
+			timeout: 3000
 		};
 
 		if (options.sample) {

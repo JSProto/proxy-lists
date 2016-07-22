@@ -65,7 +65,8 @@ module.exports = {
 
 		request({
 			method: 'GET',
-			url: module.exports.homeUrl
+			url: module.exports.homeUrl,
+			timeout: 3000
 		}, function(error, response, data) {
 
 			if (error) {

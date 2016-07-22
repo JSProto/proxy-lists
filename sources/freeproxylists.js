@@ -132,7 +132,8 @@ var freeproxylists = module.exports = {
 
 		request({
 			method: 'GET',
-			url: startingPageUrl
+			url: startingPageUrl,
+			timeout: 3000
 		}, function(error, response, data) {
 
 			if (error) {

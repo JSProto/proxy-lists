@@ -61,7 +61,8 @@ var Source = module.exports = {
 			url: 'http://gatherproxy.com/subscribe/infos',
 			headers: {
 				'Cookie': cookie
-			}
+			},
+			timeout: 3000
 		}, function(error, response, html) {
 
 			if (error) {

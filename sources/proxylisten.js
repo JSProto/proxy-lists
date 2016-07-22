@@ -154,7 +154,8 @@ module.exports = {
 
 		request({
 			method: 'GET',
-			url: 'http://www.proxy-listen.de/Proxy/Proxyliste.html'
+			url: 'http://www.proxy-listen.de/Proxy/Proxyliste.html',
+			timeout: 3000
 		}, function(error, response, data) {
 
 			if (error) {

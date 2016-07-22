@@ -99,7 +99,8 @@ var Source = module.exports = {
 			},
 			qs: {
 				start: (page - 1) * itemsPerPage
-			}
+			},
+			timeout: 3000
 		};
 
 		if (!_.isEmpty(options.protocols)) {
