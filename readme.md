@@ -7,15 +7,18 @@ Node.js module for getting proxies from publicly available proxy lists.
 
 ## Supported Proxy Lists
 
+* blackhatworld - Specific forum threads are scraped:
+  * [100-scrapebox-proxies](https://www.blackhatworld.com/seo/100-scrapebox-proxies.297574)
+  * [gscraper-proxies](https://www.blackhatworld.com/seo/gscraper-proxies.703493/)
+* [coolproxy](http://www.cool-proxy.net/proxies/http_proxy_list)
 * [freeproxylist](http://free-proxy-list.net/)
 * [freeproxylists](http://www.freeproxylists.com/)
 * [gatherproxy](http://gatherproxy.com/)
-* [hidemyass](http://proxylist.hidemyass.com/)
 * [incloak](https://incloak.com/)
+* [premproxy](https://premproxy.com/list/)
 * proxies24 - [http](http://proxyserverlist-24.blogspot.com/), [https](http://sslproxies24.blogspot.com/), [socks](http://vip-socks24.blogspot.com/)
 * [proxydb](http://proxydb.net/)
 * [proxylisten](http://www.proxy-listen.de/)
-* [proxyocean](http://www.proxyocean.com/)
 * [sockslist](http://sockslist.net/)
 
 Proxy lists that require an API key:
@@ -69,9 +72,29 @@ To output the proxies in `.txt` format:
 proxy-lists getProxies --output-format="txt"
 ```
 
+To output proxies to STDOUT:
+```
+proxy-lists getProxies --stdout
+```
+
+To output proxies to a different file than proxies.txt:
+```
+proxy-lists getProxies --output-file="somefile.txt"
+```
+
 To get proxies from specific sources:
 ```
-proxy-lists getProxies --sources-white-list="hidemyass,sockslist"
+proxy-lists getProxies --sources-white-list="gatherproxy,sockslist"
+```
+
+To get proxies from specific countries:
+```
+proxy-lists getProxies --countries="us,ca"
+```
+
+To get proxies with specific protocols:
+```
+proxy-lists getProxies --protocols="http,https"
 ```
 
 To get only anonymous and elite proxies:
@@ -123,16 +146,23 @@ Sample `proxies`:
 	{
 		ipAddress: '123.123.2.42',
 		port: 8080,
-		protocols: ['http'],
 		country: 'us',
-		anonymityLevel: 'transparent'
+		source: 'superproxies'
 	},
 	{
 		ipAddress: '234.221.233.142',
 		port: 3128,
-		protocols: ['https'],
 		country: 'cz',
-		anonymityLevel: 'elite'
+		protocols: ['https'],
+		source: 'someproxysource'
+	},
+	{
+		ipAddress: '234.221.233.142',
+		port: 3128,
+		country: 'cz',
+		anonymityLevel: 'elite',
+		protocols: ['https'],
+		source: 'anotherproxysource'
 	}
 ]
 ```
@@ -186,7 +216,15 @@ var options = {
 	/*
 		Set to TRUE to have all asynchronous operations run in series.
 	*/
-	series: false
+	series: false,
+
+	/*
+		Load GeoIp data for these types of IP addresses. Default is only ipv4.
+
+		To include both ipv4 and ipv6:
+		['ipv4', 'ipv6']
+	*/
+	ipTypes: ['ipv4']
 };
 ```
 
@@ -195,19 +233,22 @@ var options = {
 The proxy object has the following properties:
 * __ipAddress__ - `string` The IP address of the proxy.
 * __port__ - `integer` The port number of the proxy.
-* __protocols__ - `array` An array of protocols that the proxy supports. May contain one or more of the following:
+* __country__ - `string` [Alpha-2 country code](https://en.wikipedia.org/wiki/ISO_3166-1) of the country in which the proxy is geo-located.
+* __source__ - `string` The name of the proxy list from which the proxy was gathered.
+* __protocols__ - _optional_ `array` An array of protocols that the proxy supports. May contain one or more of the following:
   * __http__ - The proxy uses HTTP.
   * __https__ - The proxy uses HTTPS.
   * __socks5__ - The proxy server uses the [socks5](https://en.wikipedia.org/wiki/SOCKS#SOCKS5) protocol.
   * __socks4__ - The proxy server uses the [socks4](https://en.wikipedia.org/wiki/SOCKS#SOCKS4) protocol.
-* __tunnel__ - `boolean` Whether or not the proxy supports [tunneling](https://en.wikipedia.org/wiki/HTTP_tunnel) to HTTPS target URLs.
-* __anonymityLevel__ - `string` The anonymity level of the proxy. Can be any one of the following:
+* __tunnel__ - _optional_ `boolean` Whether or not the proxy supports [tunneling](https://en.wikipedia.org/wiki/HTTP_tunnel) to HTTPS target URLs.
+* __anonymityLevel__ - _optional_ `string` The anonymity level of the proxy. Can be any one of the following:
   * __transparent__ - The proxy does not hide the requester's IP address.
   * __anonymous__ - The proxy hides the requester's IP address, but adds headers to the forwarded request that make it clear that the request was made using a proxy.
   * __elite__ - The proxy hides the requester's IP address and does not add any proxy-related headers to the request.
-* __country__ - `string` [Alpha-2 country code](https://en.wikipedia.org/wiki/ISO_3166-1) of the country in which the proxy is geo-located.
 
-It's important to note that this module does __NOT__ verify any of the information provided by the proxy lists from which the proxies are gathered. If you need to test proxies, verify their anonymity level, or confirm their geo-location; use [proxy-verifier](https://github.com/chill117/proxy-verifier).
+The attributes marked as _optional_ above might not be given for all proxies. Some proxy lists are missing this information.
+
+It's important to note that this module does __NOT__ verify all of the information provided by the proxy lists from which the proxies are gathered. If you need to check that proxies work, verify their anonymity level, whether or not they support tunneling; use [proxy-verifier](https://github.com/chill117/proxy-verifier).
 
 
 ### getProxiesFromSource
@@ -274,7 +315,15 @@ var options = {
 	/*
 		Set to TRUE to have all asynchronous operations run in series.
 	*/
-	series: false
+	series: false,
+
+	/*
+		Load GeoIp data for these types of IP addresses. Default is only ipv4.
+
+		To include both ipv4 and ipv6:
+		['ipv4', 'ipv6']
+	*/
+	ipTypes: ['ipv4']
 };
 ```
 
@@ -316,7 +365,15 @@ ProxyLists.addSource('my-custom-source', {
 });
 ```
 
+Your proxy source is required to return the following for each proxy: `ipAddress`, `port`. See [Proxy Object](#proxy-object) above for more information.
+
 Please consider sharing your custom proxy sources by [creating a pull request](https://github.com/chill117/proxy-lists/pulls/new) to have them added to this module so that others can use them too.
+
+#### Important Options to Note
+
+Please note that there are a couple options that you should respect in your custom proxy source:
+* **sample** - `boolean` If `options.sample` is `true` then you should do your best to make the fewest number of HTTP requests to the proxy source but still get at least some real proxies. The purpose of this option is to reduce the strain caused by this module's unit tests on each proxy sources' servers.
+* **series** - `boolean` If `options.series` is `true` you should make sure that all asynchronous code in your custom source is run in series, NOT parallel. The purpose is to reduce the memory usage of the module so that it can be run in low-memory environments such as a VPS with 256MB of RAM.
 
 
 ### listSources
@@ -340,8 +397,8 @@ Sample `sources`:
 		homeUrl: 'http://www.freeproxylists.com'
 	},
 	{
-		name: 'hidemyass',
-		homeUrl: 'http://proxylist.hidemyass.com/'
+		name: 'gatherproxy',
+		homeUrl: 'http://www.gatherproxy.com'
 	}
 ]
 ```
@@ -394,24 +451,3 @@ To run only code-style checks:
 ```
 grunt test:code-style
 ```
-
-## Changelog
-
-* v1.7.0:
-  * Now performing geo-ip look-up for all proxies
-  * More proxy sources: gatherproxy.com, incloak.com, proxydb.net
-* v1.6.0:
-  * Added command-line interface.
-  * Fixes for source (kingproxies).
-* v1.5.1:
-  * Fixes for source (hidemyass).
-  * Removed geo-ip lookups from source (proxies24).
-* v1.5.0:
-  * Added `series` option to `ProxyLists.getProxies()` and `ProxyLists.getProxiesFromSource()`.
-* v1.4.0:
-  * `isValidProxy` no longer checks the `proxy.country` attribute.
-  * `ProxyLists.getProxies()`, `ProxyLists.getProxiesFromSource()`, and `getProxies()` for all sources now using event emitter interface.
-* v1.3.0:
-  * Removed attribute `proxy.protocol` in favor of `proxy.protocols` (an array of all supported protocols).
-  * Renamed attribute `proxy.ip_address` to `proxy.ipAddress` for consistency.
-  * Added attribute `proxy.source`.

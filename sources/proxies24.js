@@ -12,7 +12,7 @@ var protocolToListLabel = {
 	'socks5': 'vip socks'
 };
 
-var proxies24 = module.exports = {
+module.exports = {
 
 	homeUrl: 'http://proxyserverlist-24.blogspot.com/',
 
@@ -133,7 +133,7 @@ var proxies24 = module.exports = {
 
 			var $ = cheerio.load(html);
 
-			$('.post-title a').each(function(i, anchor) {
+			$('.post-title a').each(function() {
 
 				var $anchor = $(this);
 				var label = $anchor.text().toString().toLowerCase();
@@ -181,7 +181,6 @@ var proxies24 = module.exports = {
 
 	parseListPageHtml: function(list, cb) {
 
-		var proxies = [];
 		var html = list.html;
 		var protocol = list.protocol;
 

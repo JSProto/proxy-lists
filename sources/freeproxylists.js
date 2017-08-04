@@ -4,37 +4,12 @@ var _ = require('underscore');
 var async = require('async');
 var cheerio = require('cheerio');
 var EventEmitter = require('events').EventEmitter || require('events');
-var parseString = require('xml2js').parseString;
+var parseXml = require('xml2js').parseString;
 var request = require('request');
 
 var baseUrl = 'http://www.freeproxylists.com';
 
-var countries = require('../countries');
-
-// freeproxylists uses unofficial names for some countries.
-var unoffocialCountryNames = {
-	'bo': 'Bolivia',
-	'ci': 'Cote D\'Ivoire (Ivory Coast)',
-	'hr': 'Croatia (Hrvatska)',
-	'gb': 'Great Britain (UK)',
-	'ir': 'Iran',
-	'kr': 'Korea (South)',
-	'la': 'Laos',
-	'mk': 'Macedonia',
-	'md': 'Moldova',
-	'nz': 'New Zealand (Aotearoa)',
-	'ps': 'Palestine',
-	'sk': 'Slovak Republic',
-	'sy': 'Syria',
-	'tw': 'Taiwan',
-	'tz': 'Tanzania',
-	'us': 'United States',
-	'vu': 'Venezuela',
-};
-
-var countryNameToCode = _.invert(_.extend({}, countries, unoffocialCountryNames));
-
-var freeproxylists = module.exports = {
+var Source = module.exports = {
 
 	homeUrl: baseUrl,
 
@@ -151,7 +126,7 @@ var freeproxylists = module.exports = {
 			var listUrls = [];
 			var $ = cheerio.load(startingPageHtml);
 
-			$('table a').each(function(index) {
+			$('table a').each(function() {
 
 				var text = $(this).text();
 
@@ -169,7 +144,7 @@ var freeproxylists = module.exports = {
 
 	getListData: function(listUrl, cb) {
 
-		var dataUrl = freeproxylists.listUrlToDataUrl(listUrl);
+		var dataUrl = Source.listUrlToDataUrl(listUrl);
 
 		request({
 			method: 'GET',
@@ -202,25 +177,22 @@ var freeproxylists = module.exports = {
 			list.anonymityLevel = 'elite';
 		}
 
-		parseString(list.data, function(error, result) {
+		parseXml(list.data, function(error, result) {
 
 			if (error) {
 				return cb(error);
 			}
 
-			var proxies = [];
-			var $ = cheerio.load(result.root.quote[0]);
+			try {
 
-			$('table tr').each(function(index, tr) {
+				var proxies = [];
+				var $ = cheerio.load(result.root.quote[0]);
 
-				if (index > 1) {
+				$('table tr').each(function(index, tr) {
 
-					// Data starts at the 3rd row.
+					if (index > 1) {
 
-					var countryName = $('td', tr).eq(5).text().toString();
-					var countryCode = countryNameToCode[countryName] || null;
-
-					if (countryCode) {
+						// Data starts at the 3rd row.
 
 						var protocol = list.protocol;
 
@@ -232,12 +204,14 @@ var freeproxylists = module.exports = {
 							ipAddress: $('td', tr).eq(0).text().toString(),
 							port: parseInt($('td', tr).eq(1).text().toString()),
 							protocols: [protocol],
-							country: countryCode,
 							anonymityLevel: list.anonymityLevel
 						});
 					}
-				}
-			});
+				});
+
+			} catch (error) {
+				return cb(error);
+			}
 
 			cb(null, proxies);
 		});
