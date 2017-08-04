@@ -4,8 +4,6 @@ var _ = require('underscore');
 var async = require('async');
 var expect = require('chai').expect;
 
-var ProxyLists = require('../../../index');
-
 describe('source.freeproxylists', function() {
 
 	var freeproxylists = require('../../../sources/freeproxylists');
@@ -93,11 +91,26 @@ describe('source.freeproxylists', function() {
 		});
 	});
 
-	describe('parseListData(listData, cb)', function() {
+	describe('parseListData(listData, listUrl, cb)', function() {
 
 		it('should be a function', function() {
 
 			expect(freeproxylists.parseListData).to.be.a('function');
+		});
+
+		it('should handle badly structured XML', function(done) {
+
+			var list = {
+				url: 'anon/somesample.html',
+				data: '<?xml version="1.0" encoding="utf-8"?><missingroot></missingroot>'
+			};
+
+			freeproxylists.parseListData(list.data, list.url, function(error, proxies) {
+
+				expect(error).to.not.equal(null);
+				expect(proxies).to.equal(undefined);
+				done();
+			});
 		});
 
 		it('should parse the XML data into a JSON array of proxies', function(done) {
@@ -117,56 +130,48 @@ describe('source.freeproxylists', function() {
 								ipAddress: '123.123.2.42',
 								port: 8080,
 								protocols: ['http'],
-								country: 'cz',
 								anonymityLevel: 'anonymous'
 							},
 							{
 								ipAddress: '123.209.64.13',
 								port: 8118,
 								protocols: ['http'],
-								country: 'cz',
 								anonymityLevel: 'anonymous'
 							},
 							{
 								ipAddress: '234.221.233.142',
 								port: 3128,
 								protocols: ['https'],
-								country: 'sk',
 								anonymityLevel: 'anonymous'
 							},
 							{
 								ipAddress: '123.123.124.179',
 								port: 80,
 								protocols: ['http'],
-								country: 'cz',
 								anonymityLevel: 'anonymous'
 							},
 							{
 								ipAddress: '123.123.114.49',
 								port: 80,
 								protocols: ['http'],
-								country: 'cz',
 								anonymityLevel: 'anonymous'
 							},
 							{
 								ipAddress: '123.123.114.36',
 								port: 80,
 								protocols: ['http'],
-								country: 'cz',
 								anonymityLevel: 'anonymous'
 							},
 							{
 								ipAddress: '123.123.112.71',
 								port: 80,
 								protocols: ['http'],
-								country: 'cz',
 								anonymityLevel: 'anonymous'
 							},
 							{
 								ipAddress: '234.123.45.21',
 								port: 8081,
 								protocols: ['https'],
-								country: 'at',
 								anonymityLevel: 'anonymous'
 							}
 						]);
