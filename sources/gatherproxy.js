@@ -22,7 +22,7 @@ var users = [
 
 var Source = module.exports = {
 
-	homeUrl: 'http://gatherproxy.com',
+	homeUrl: 'http://www.gatherproxy.com',
 
 	getProxies: function(options) {
 
@@ -56,9 +56,19 @@ var Source = module.exports = {
 
 	getDownloadLink: function(cookie, cb) {
 
+		async.seq(
+			Source.getDownloadPage.bind(Source, cookie),
+			Source.parseDownloadPageHtml
+		)(function(error, downloadLink) {
+			cb(error, downloadLink, cookie);
+		});
+	},
+
+	getDownloadPage: function(cookie, cb) {
+
 		request({
 			method: 'GET',
-			url: 'http://gatherproxy.com/subscribe/infos',
+			url: 'http://www.gatherproxy.com/subscribe/infos',
 			headers: {
 				'Cookie': cookie
 			},
@@ -69,19 +79,32 @@ var Source = module.exports = {
 				return cb(error);
 			}
 
-			var downloadLink;
-			var $ = cheerio.load(html);
-			var $anchor = $('#body > p a').eq(0);
+			cb(null, html);
+		});
+	},
 
-			if ($anchor.length > 0) {
-				downloadLink = $anchor.attr('href').toString().trim();
+	parseDownloadPageHtml: function(html, cb) {
+
+		_.defer(function() {
+
+			try {
+				var downloadLink;
+				var $ = cheerio.load(html);
+				var $anchor = $('#body > p a').eq(0);
+
+				if ($anchor.length > 0) {
+					downloadLink = $anchor.attr('href').toString().trim();
+				}
+
+				if (!downloadLink) {
+					throw new Error('Could not find download link.');
+				}
+
+			} catch (error) {
+				return cb(error);
 			}
 
-			if (!downloadLink) {
-				return cb(new Error('Could not find download link.'));
-			}
-
-			cb(null, downloadLink, cookie);
+			cb(null, downloadLink);
 		});
 	},
 
@@ -118,24 +141,27 @@ var Source = module.exports = {
 
 	parseData: function(data, cb) {
 
-		var proxies = [];
+		_.defer(function() {
 
-		try {
-			_.each(data.trim().split('\n'), function(line) {
+			var proxies = [];
 
-				var parts = line.split(':');
-				var proxy = {
-					ipAddress: parts[0],
-					port: parseInt(parts[1]),
-					protocols: ['http']
-				};
-				proxies.push(proxy);
-			});
-		} catch (error) {
-			return cb(error);
-		}
+			try {
+				_.each(data.trim().split('\n'), function(line) {
 
-		cb(null, proxies);
+					var parts = line.split(':');
+					var proxy = {
+						ipAddress: parts[0],
+						port: parseInt(parts[1]),
+						protocols: ['http']
+					};
+					proxies.push(proxy);
+				});
+			} catch (error) {
+				return cb(error);
+			}
+
+			cb(null, proxies);
+		});
 	},
 
 	login: function(cb) {
@@ -148,9 +174,13 @@ var Source = module.exports = {
 				return cb(error);
 			}
 
+			if (!cookie) {
+				return cb(new Error('Missing required session cookie.'));
+			}
+
 			request({
 				method: 'POST',
-				url: 'http://gatherproxy.com/subscribe/login',
+				url: 'http://www.gatherproxy.com/subscribe/login',
 				headers: {
 					'Cookie': cookie
 				},
@@ -169,7 +199,16 @@ var Source = module.exports = {
 				var $error = $('.error');
 
 				if ($error && $error.length > 0) {
-					return cb(new Error($error.text().trim()));
+					error = new Error($error.text().trim());
+					error.debug = {
+						cookie: cookie,
+						form: {
+							'Username': user.email,
+							'Password': user.password,
+							'Captcha': captchaSolution
+						}
+					};
+					return cb(error);
 				}
 
 				cb(null, cookie);
@@ -192,7 +231,6 @@ var Source = module.exports = {
 			}
 
 			cb(null, solution, cookie);
-
 		});
 	},
 
@@ -200,7 +238,7 @@ var Source = module.exports = {
 
 		request({
 			method: 'GET',
-			url: 'http://gatherproxy.com/subscribe/login'
+			url: 'http://www.gatherproxy.com/subscribe/login'
 		}, function(error, response, html) {
 
 			if (error) {
@@ -299,7 +337,6 @@ var Source = module.exports = {
 
 			default:
 				throw new Error('Failed to solve Captcha ("' + captcha + '"): Invalid operator.');
-				break;
 		}
 
 		return Math.round(solution);
@@ -311,6 +348,6 @@ var Source = module.exports = {
 		var cookie = _.find(cookies, function(cookie) {
 			return cookie.substr(0, name.length) === name;
 		});
-		return cookie.substr(0, cookie.indexOf(';'));
+		return cookie && cookie.substr(0, cookie.indexOf(';'));
 	}
 };
