@@ -24,7 +24,7 @@ module.exports = {
 		var getProxiesFromThread = this.getProxiesFromLastPostInThread.bind(this);
 		var asyncMethod = options.series === true ? 'eachSeries' : 'each';
 
-		async[asyncMethod](threadUrls, function(threadUrl, nextThread) {
+		async [asyncMethod](threadUrls, function(threadUrl, nextThread) {
 
 			getProxiesFromThread(threadUrl, function(error, proxies) {
 
@@ -130,7 +130,8 @@ module.exports = {
 			url: url,
 			headers: {
 				'User-Agent': 'proxy-lists-module'
-			}
+			},
+			timeout: 3000
 		}, function(error, response, html) {
 
 			if (error) {

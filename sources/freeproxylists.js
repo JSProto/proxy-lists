@@ -21,7 +21,7 @@ var Source = module.exports = {
 		var startingPageUrls = this.prepareStartingPageUrls(options);
 		var asyncMethod = options.series === true ? 'eachSeries' : 'each';
 
-		async[asyncMethod](_.keys(startingPageUrls), _.bind(function(key, nextStartingPage) {
+		async [asyncMethod](_.keys(startingPageUrls), _.bind(function(key, nextStartingPage) {
 
 			var startingPageUrl = startingPageUrls[key];
 
@@ -42,7 +42,7 @@ var Source = module.exports = {
 					listUrls = listUrls.slice(0, 1);
 				}
 
-				async[asyncMethod](listUrls, _.bind(function(listUrl, nextList) {
+				async [asyncMethod](listUrls, _.bind(function(listUrl, nextList) {
 
 					var fn = async.seq(
 						this.getListData,
@@ -163,7 +163,8 @@ var Source = module.exports = {
 
 		var list = {
 			url: listUrl,
-			data: data
+			data: data,
+			timeout: 3000
 		};
 
 		if (list.url.substr(0, 'socks/'.length) === 'socks/') {

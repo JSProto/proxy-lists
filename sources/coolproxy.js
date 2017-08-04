@@ -26,7 +26,7 @@ module.exports = {
 					}
 					next();
 				});
-			}, function(){
+			}, function() {
 				emitter.emit('end');
 			});
 		});
@@ -61,6 +61,7 @@ module.exports = {
 		request({
 			method: 'GET',
 			url: link,
+			timeout: 3000
 		}, function(error, res, html) {
 			if (error) {
 				return cb(error);

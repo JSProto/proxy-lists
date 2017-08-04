@@ -20,7 +20,9 @@ module.exports = {
 		var done = false;
 
 		// Until runs in series.
-		async.until(function() { return done; }, function(next) {
+		async.until(function() {
+			return done;
+		}, function(next) {
 			getProxiesFromPage(pageNumber++, function(error, proxies) {
 
 				if (error) {
@@ -55,7 +57,8 @@ module.exports = {
 			url: pageUrl,
 			headers: {
 				'User-Agent': 'proxy-lists-module'
-			}
+			},
+			timeout: 3000
 		}, function(error, response, body) {
 
 			if (error) {
@@ -63,7 +66,7 @@ module.exports = {
 			}
 
 			if (response.statusCode >= 300) {
-				return cb(null, []/* proxies */);
+				return cb(null, [] /* proxies */ );
 			}
 
 			parsePageHtml(body.toString(), cb);
