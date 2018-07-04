@@ -107,7 +107,7 @@ var hidemyass = module.exports = {
 			requestOptions.form.a.push(4);
 		}
 
-		request(requestOptions, function(error, response, data) {
+		options.request(requestOptions, function(error, response, data) {
 
 			if (error) {
 				return cb(error);

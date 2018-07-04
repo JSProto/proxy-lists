@@ -121,7 +121,8 @@ module.exports = {
 
 		request({
 			method: 'GET',
-			url: list.url
+            url: list.url,
+            timeout: 3000,
 		}, function(error, response, data) {
 
 			if (error) {

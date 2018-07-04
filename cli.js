@@ -26,6 +26,12 @@ program
 program
 	.command('getProxies')
 	.option(
+		'-m, --filter-mode [value]',
+		'Set the filter mode [strict or loose]',
+		value,
+		null
+	)
+	.option(
 		'-a, --anonymity-levels <list>',
 		'Get proxies with these anonymity levels [' + ProxyLists._anonymityLevels.join(', ') + ']',
 		list,
@@ -34,6 +40,12 @@ program
 	.option(
 		'-c, --countries <list>',
 		'Get proxies from these countries [us, ca, cz, ..]',
+		list,
+		null
+	)
+	.option(
+		'-C, --countries-black-list <list>',
+		'Exclude proxies from these countries [de, gb, ..]',
 		list,
 		null
 	)
@@ -227,8 +239,10 @@ program
 		log('Getting proxies...');
 
 		var options = _.pick(this, [
+			'filterMode',
 			'anonymityLevels',
 			'countries',
+			'countriesBlackList',
 			'protocols',
 			'sourcesWhiteList',
 			'sourcesBlackList',

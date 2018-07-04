@@ -171,6 +171,15 @@ All available options:
 ```js
 var options = {
 	/*
+		The filter mode determines how some options will be used to exclude proxies.
+
+		For example if using this option `anonymityLevels: ['elite']`:
+			'strict' mode will only allow proxies that have the 'anonymityLevel' property equal to 'elite'; ie. proxies that are missing the 'anonymityLevel' property will be excluded.
+			'loose' mode will allow proxies that have the 'anonymityLevel' property of 'elite' as well as those that are missing the 'anonymityLevel' property.
+	*/
+	filterMode: 'strict',
+
+	/*
 		Get proxies for the specified countries.
 
 		To get all proxies, regardless of country, set this option to NULL.
@@ -182,6 +191,14 @@ var options = {
 		['us', 'ca']
 	*/
 	countries: null,
+
+	/*
+		Exclude proxies from the specified countries.
+
+		To exclude Germany and Great Britain:
+		['de', 'gb']
+	*/
+	countriesBlackList: null,
 
 	/*
 		Get proxies that use the specified protocols.
@@ -224,7 +241,15 @@ var options = {
 		To include both ipv4 and ipv6:
 		['ipv4', 'ipv6']
 	*/
-	ipTypes: ['ipv4']
+	ipTypes: ['ipv4'],
+
+	/*
+		Default request module options. For example you could pass the 'proxy' option in this way.
+
+		See for more info:
+		https://github.com/request/request#requestdefaultsoptions
+	*/
+	defaultRequestOptions: null
 };
 ```
 
@@ -281,51 +306,8 @@ gettingProxies.once('end', function() {
 	// Done getting proxies.
 });
 ```
+See [getProxies](#getproxies) for all available options.
 
-All available options:
-```js
-var options = {
-	/*
-		Get proxies for the specified countries.
-
-		To get all proxies, regardless of country, set this option to NULL.
-
-		See:
-		https://en.wikipedia.org/wiki/ISO_3166-1
-
-		Only USA and Canada:
-		['us', 'ca']
-	*/
-	countries: null,
-
-	/*
-		Get proxies that use the specified protocols.
-
-		To get all proxies, regardless of protocol, set this option to NULL.
-	*/
-	protocols: ['http', 'https'],
-
-	/*
-		Anonymity level.
-
-		To get all proxies, regardless of anonymity level, set this option to NULL.
-	*/
-	anonymityLevels: ['anonymous', 'elite'],
-
-	/*
-		Set to TRUE to have all asynchronous operations run in series.
-	*/
-	series: false,
-
-	/*
-		Load GeoIp data for these types of IP addresses. Default is only ipv4.
-
-		To include both ipv4 and ipv6:
-		['ipv4', 'ipv6']
-	*/
-	ipTypes: ['ipv4']
-};
-```
 
 ### addSource
 

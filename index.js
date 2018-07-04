@@ -5,10 +5,20 @@ var async = require('async');
 var EventEmitter = require('events').EventEmitter || require('events');
 var GeoIpNativeLite = require('geoip-native-lite');
 var net = require('net');
+var request = require('request');
 
 var ProxyLists = module.exports = {
 
 	defaultOptions: {
+		/*
+			The filter mode determines how some options will be used to exclude proxies.
+
+			For example if using this option `anonymityLevels: ['elite']`:
+				'strict' mode will only allow proxies that have the 'anonymityLevel' property equal to 'elite'; ie. proxies that are missing the 'anonymityLevel' property will be excluded.
+				'loose' mode will allow proxies that have the 'anonymityLevel' property of 'elite' as well as those that are missing the 'anonymityLevel' property.
+		*/
+		filterMode: 'strict',
+
 		/*
 			Get proxies for the specified countries.
 
@@ -21,6 +31,14 @@ var ProxyLists = module.exports = {
 			['us', 'ca']
 		*/
 		countries: null,
+
+		/*
+			Exclude proxies from the specified countries.
+
+			To exclude Germany and Great Britain:
+			['de', 'gb']
+		*/
+		countriesBlackList: null,
 
 		/*
 			Get proxies that use the specified protocols.
@@ -63,7 +81,15 @@ var ProxyLists = module.exports = {
 			To include both ipv4 and ipv6:
 			['ipv4', 'ipv6']
 		*/
-		ipTypes: ['ipv4']
+		ipTypes: ['ipv4'],
+
+		/*
+			Default request module options. For example you could pass the 'proxy' option in this way.
+
+			See for more info:
+			https://github.com/request/request#requestdefaultsoptions
+		*/
+		defaultRequestOptions: null
 	},
 
 	_protocols: ['http', 'https', 'socks4', 'socks5'],
@@ -75,7 +101,7 @@ var ProxyLists = module.exports = {
 	// Get proxies from all sources.
 	getProxies: function(options) {
 
-		options = this.prepareOptions(options || {});
+		options = ProxyLists.prepareOptions(options);
 
 		var emitter = new EventEmitter();
 		var sources = this.listSources(options);
@@ -110,7 +136,7 @@ var ProxyLists = module.exports = {
 			throw new Error('Proxy source does not exist: "' + name + '"');
 		}
 
-		options = this.prepareOptions(options || {});
+		options = this.prepareOptions(options);
 
 		var source = this._sources[name];
 
@@ -141,7 +167,8 @@ var ProxyLists = module.exports = {
 				return onEnd();
 			}
 
-			var gettingProxies = source.getProxies(ProxyLists.deepClone(options));
+			var optionsForSource = ProxyLists.prepareOptionsForSource(options);
+			var gettingProxies = source.getProxies(optionsForSource);
 
 			gettingProxies.on('data', function(proxies) {
 
@@ -230,6 +257,7 @@ var ProxyLists = module.exports = {
 		options || (options = {});
 
 		var countriesTest;
+		var countriesBlackListTest;
 		var protocolsTest;
 		var anonymityLevelsTest;
 
@@ -242,23 +270,48 @@ var ProxyLists = module.exports = {
 			countriesTest = options.countries;
 		}
 
-		if (options.protocols) {
+		if (options.countriesBlackList) {
 
+			if (_.isArray(options.countriesBlackList) || !_.isObject(options.countriesBlackList)) {
+				throw new Error('Invalid option "countriesBlackList": Object expected.');
+			}
+
+			countriesBlackListTest = options.countriesBlackList;
+		}
+
+		if (options.protocols) {
 			protocolsTest = arrayToHash(options.protocols);
 		}
 
 		if (options.anonymityLevels) {
-
 			anonymityLevelsTest = arrayToHash(options.anonymityLevels);
 		}
 
+		var strict = options.filterMode === 'strict';
+
 		return _.filter(proxies, function(proxy) {
 
-			if (countriesTest && !countriesTest[proxy.country]) {
+			if (
+				countriesTest &&
+				(strict || proxy.country) &&
+				!countriesTest[proxy.country]
+			) {
 				return false;
 			}
 
-			if (anonymityLevelsTest && !anonymityLevelsTest[proxy.anonymityLevel]) {
+			if (
+				countriesBlackListTest &&
+				(strict || proxy.country) &&
+				!!countriesBlackListTest[proxy.country]
+			) {
+				return false;
+			}
+
+			if (
+				anonymityLevelsTest &&
+				(strict || proxy.anonymityLevel) &&
+				!anonymityLevelsTest[proxy.anonymityLevel]
+			) {
 				return false;
 			}
 
@@ -268,7 +321,7 @@ var ProxyLists = module.exports = {
 					return protocolsTest[protocol];
 				});
 
-				if (!hasAtLeastOnePassingProtocol) {
+				if ((strict || !_.isEmpty(proxy.protocols)) && !hasAtLeastOnePassingProtocol) {
 					return false;
 				}
 			}
@@ -277,9 +330,22 @@ var ProxyLists = module.exports = {
 		});
 	},
 
+	prepareOptionsForSource: function(options) {
+
+		// Deep clone the options object before passing to the source's getProxies method.
+		// This prevents mutating the original options object.
+		options = JSON.parse(JSON.stringify(options));
+
+		// Prepare request wrapper for the source.
+		options.request = request.defaults(options.defaultRequestOptions || {});
+
+		return options;
+	},
+
 	prepareOptions: function(options) {
 
-		options = _.extend({}, this.defaultOptions, options || {});
+		// Set default options.
+		options = _.defaults(options || {}, this.defaultOptions);
 
 		if (_.isNull(options.countries)) {
 			// Use all countries.
@@ -300,6 +366,14 @@ var ProxyLists = module.exports = {
 			throw new Error('Invalid option "countries": Array or object expected.');
 		}
 
+		if (
+			options.countriesBlackList &&
+			!_.isArray(options.countriesBlackList) &&
+			!_.isObject(options.countriesBlackList)
+		) {
+			throw new Error('Invalid option "countriesBlackList": Array or object expected.');
+		}
+
 		if (!_.isArray(options.protocols)) {
 			throw new Error('Invalid option "protocols": Array expected.');
 		}
@@ -309,8 +383,13 @@ var ProxyLists = module.exports = {
 		}
 
 		if (options.countries && _.isArray(options.countries)) {
-
 			options.countries = _.object(_.map(options.countries, function(code) {
+				return [code, this._countries[code]];
+			}, this));
+		}
+
+		if (options.countriesBlackList && _.isArray(options.countriesBlackList)) {
+			options.countriesBlackList = _.object(_.map(options.countriesBlackList, function(code) {
 				return [code, this._countries[code]];
 			}, this));
 		}
@@ -358,11 +437,6 @@ var ProxyLists = module.exports = {
 	isValidIpAddress: function(ipAddress) {
 
 		return net.isIP(ipAddress) !== 0;
-	},
-
-	deepClone: function(object) {
-
-		return JSON.parse(JSON.stringify(object));
 	}
 };
 

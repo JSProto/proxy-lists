@@ -4,7 +4,6 @@ var _ = require('underscore');
 var async = require('async');
 var cheerio = require('cheerio');
 var EventEmitter = require('events').EventEmitter || require('events');
-var request = require('request');
 
 module.exports = {
 
@@ -20,10 +19,8 @@ module.exports = {
 		var done = false;
 
 		// Until runs in series.
-		async.until(function() {
-			return done;
-		}, function(next) {
-			getProxiesFromPage(pageNumber++, function(error, proxies) {
+		async.until(function() { return done; }, function(next) {
+			getProxiesFromPage(pageNumber++, options, function(error, proxies) {
 
 				if (error) {
 					emitter.emit('error', error);
@@ -47,12 +44,12 @@ module.exports = {
 		return emitter;
 	},
 
-	getProxiesFromPage: function(pageNumber, cb) {
+	getProxiesFromPage: function(pageNumber, options, cb) {
 
 		var pageUrl = this.makePageUrl(pageNumber);
 		var parsePageHtml = this.parsePageHtml.bind(this);
 
-		request({
+		options.request({
 			method: 'GET',
 			url: pageUrl,
 			headers: {
